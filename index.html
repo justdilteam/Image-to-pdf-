@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JustDil - Free Image to PDF Converter</title>
+
+  <!-- Canonical & Robots -->
+  <link rel="canonical" href="https://justdil.com" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Convert JPG and PNG images to PDF files online. 100% Free, Fast and No Login Required.">
+  <meta name="keywords" content="image to pdf, jpg to pdf, png to pdf, convert image, justdil tools">
+  <meta name="author" content="JustDil Tools">
+
+  <!-- Open Graph Meta -->
+  <meta property="og:title" content="JustDil - Image to PDF Tool" />
+  <meta property="og:description" content="Fast, free, and easy image to PDF converter." />
+  <meta property="og:image" content="og-image.png" />
+  <meta property="og:url" content="https://justdil.com" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="JustDil - Image to PDF Tool" />
+  <meta name="twitter:description" content="Free JPG/PNG to PDF converter online." />
+  <meta name="twitter:image" content="og-image.png" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- PDF-lib CDN -->
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f6fa;
+      color: #222;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background: #0072f5;
+      color: white;
+      padding: 2rem 1rem;
+    }
+    h1 { margin: 0; }
+    .upload-area {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      margin: 2rem auto;
+      max-width: 600px;
+      background: white;
+      border-radius: 10px;
+    }
+    input[type="file"] { display: none; }
+    label {
+      background: #0072f5;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 1rem;
+    }
+    .preview {
+      position: relative;
+    }
+    .preview img {
+      height: 100px;
+      border-radius: 8px;
+    }
+    .remove-btn {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .convert-btn {
+      background: #28a745;
+      color: white;
+      padding: 12px 24px;
+      font-size: 16px;
+      margin-top: 1.5rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    footer {
+      margin-top: 3rem;
+      padding: 1rem;
+      font-size: 14px;
+      background: #eee;
+    }
+    footer a {
+      color: #0072f5;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>JustDil - Image to PDF Converter</h1>
+    <p>Upload JPG or PNG images and convert to PDF easily.</p>
+  </header>
+
+  <section class="upload-area" ondrop="dropHandler(event)" ondragover="dragOverHandler(event)">
+    <label for="fileInput">📁 Select Images</label>
+    <input type="file" id="fileInput" accept="image/*" multiple />
+    <div class="preview-container" id="previewContainer"></div>
+    <button class="convert-btn" onclick="convertToPDF()">Convert to PDF</button>
+  </section>
+
+  <footer>
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Contact Us</a>
+    <p>© 2025 JustDil Tools. All rights reserved.</p>
+  </footer>
+
+  <script>
+    let files = [];
+    const input = document.getElementById("fileInput");
+    const previewContainer = document.getElementById("previewContainer");
+
+    input.addEventListener("change", (e) => {
+      files = Array.from(e.target.files);
+      showPreviews();
+    });
+
+    function dragOverHandler(ev) {
+      ev.preventDefault();
+    }
+
+    function dropHandler(ev) {
+      ev.preventDefault();
+      files = Array.from(ev.dataTransfer.files);
+      showPreviews();
+    }
+
+    function showPreviews() {
+      previewContainer.innerHTML = "";
+      files.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const div = document.createElement("div");
+          div.className = "preview";
+          div.innerHTML = `
+            <img src="${e.target.result}" alt="Image Preview" />
+            <button class="remove-btn" onclick="removeImage(${index})">×</button>
+          `;
+          previewContainer.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function removeImage(index) {
+      files.splice(index, 1);
+      showPreviews();
+    }
+
+    async function convertToPDF() {
+      if (files.length === 0) {
+        alert("Please select at least one image.");
+        return;
+      }
+
+      const { PDFDocument } = PDFLib;
+      const pdfDoc = await PDFDocument.create();
+
+      for (let file of files) {
+        const imgBytes = await file.arrayBuffer();
+        let img;
+        if (file.type.includes("png")) {
+          img = await pdfDoc.embedPng(imgBytes);
+        } else {
+          img = await pdfDoc.embedJpg(imgBytes);
+        }
+        const page = pdfDoc.addPage([img.width, img.height]);
+        page.drawImage(img, {
+          x: 0,
+          y: 0,
+          width: img.width,
+          height: img.height,
+        });
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "converted.pdf";
+      link.click();
+    }
+  </script>
+</body>
+  </html>
